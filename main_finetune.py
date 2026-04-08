@@ -180,51 +180,25 @@ def main(args, criterion):
     if args.finetune and not args.eval:
         print(f"Preparing to load pre-trained weights: {args.finetune}")
 
+
         if args.model in ["Dinov3", "Dinov2"]:
-            checkpoint_path = args.finetune  # local path
+            checkpoint_path = args.finetune
         elif args.model in ["RETFound_dinov2", "RETFound_mae"]:
-            print(f"Downloading pre-trained weights from Hugging Face Hub: {args.finetune}")
-            checkpoint_path = hf_hub_download(
-                repo_id=f"YukunZhou/{args.finetune}",
-                filename=f"{args.finetune}.pth",
-            )
+            if args.finetune.endswith(".pth") or os.path.exists(args.finetune):
+                # caminho local
+                checkpoint_path = args.finetune
+            else:
+                # interpreta como repo ID do Hugging Face
+                print(f"Downloading pre-trained weights from Hugging Face Hub: {args.finetune}")
+                checkpoint_path = hf_hub_download(
+                    repo_id=f"YukunZhou/{args.finetune}",
+                    filename=f"{args.finetune}.pth",
+                )
         else:
             raise ValueError(
                 f"Unsupported model '{args.model}'. "
                 f"Expected one of: Dinov3, Dinov2, RETFound_dinov2, RETFound_mae"
             )
-
-        checkpoint = torch.load(checkpoint_path, map_location="cpu")
-        print(f"Loaded pre-trained checkpoint from: {checkpoint_path}")
-
-        if args.model in ["Dinov3", "Dinov2"]:
-            checkpoint_model = checkpoint
-        elif args.model == "RETFound_dinov2":
-            checkpoint_model = checkpoint["teacher"]
-        else:  # RETFound_mae
-            checkpoint_model = checkpoint["model"]
-
-        # -- Key hygiene
-        checkpoint_model = {k.replace("backbone.", ""): v for k, v in checkpoint_model.items()}
-        checkpoint_model = {k.replace("mlp.w12.", "mlp.fc1."): v for k, v in checkpoint_model.items()}
-        checkpoint_model = {k.replace("mlp.w3.", "mlp.fc2."): v for k, v in checkpoint_model.items()}
-
-        # -- Remove classifier if shape mismatched
-        state_dict = model.state_dict()
-        for k in ["head.weight", "head.bias"]:
-            if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-                print(f"Removing key {k} from pretrained checkpoint")
-                del checkpoint_model[k]
-
-        # -- Interpolate pos embed (ViT)
-        interpolate_pos_embed(model, checkpoint_model)
-
-        # -- Load backbone weights (non-strict)
-        _ = model.load_state_dict(checkpoint_model, strict=False)
-
-        # -- Re-init head
-        if hasattr(model, "head") and hasattr(model.head, "weight"):
-            trunc_normal_(model.head.weight, std=2e-5)
 
     # ---- Datasets & samplers
     dataset_train = build_dataset(is_train="train", args=args)
@@ -422,7 +396,7 @@ def main(args, criterion):
     # Final Test (Best Ckpt)
     # =========================
     ckpt_path = os.path.join(args.output_dir, args.task, "checkpoint-best.pth")
-    checkpoint = torch.load(ckpt_path, map_location="cpu")
+    checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     model_without_ddp.load_state_dict(checkpoint["model"], strict=False)
     model.to(device)
     print(f"Test with the best model, epoch = {checkpoint.get('epoch', -1)}:")

@@ -132,3 +132,9 @@ dmypy.json
 .pyre/
 
 IDRiD_data
+
+A. RFMiD_All_Classes_Dataset
+rfmid_binary
+checkpoints
+output_dir
+output_logs
