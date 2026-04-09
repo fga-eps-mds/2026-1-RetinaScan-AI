@@ -1,0 +1,41 @@
+name: CI/CD - Lint & Type Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-type-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r api/requirements.txt
+
+      - name: Install linting and type-checking tools
+        run: |
+          pip install black ruff mypy
+
+      - name: Check code formatting (Black)
+        run: |
+          black --check --diff .
+
+      - name: Run Ruff linter
+        run: |
+          ruff check .
+
+      - name: Type check with MyPy
+        run: |
+          mypy .
