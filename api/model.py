@@ -23,13 +23,21 @@ CLASS_NAMES = {
 }
 
 class RetinaScanModel:
-    def __init__(self, checkpoint_path, model_name= 'RETFound_mae', input_size: int = 224, num_classes: int = 2, device: str | None = None):
+    def __init__(
+        self,
+        checkpoint_path,
+        model_name='RETFound_mae',
+        input_size: int = 224,
+        num_classes: int = 2,
+        device: str | None = None,
+        threshold: float = 0.5,
+    ):
         self.checkpoint_path = checkpoint_path
         self.model_name = model_name
         self.input_size = input_size
         self.num_classes = num_classes
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
-
+        self.threshold = threshold
         self.transform = transforms.Compose([
             transforms.Resize((input_size, input_size)),
             transforms.ToTensor(),
@@ -43,12 +51,13 @@ class RetinaScanModel:
 
         pass
 
-    def _build_model(self): 
+    def _build_model(self, checkpoint_args): 
         model = models.__dict__[self.model_name](
-            img_size=self.input_size,
+            # img_size=self.input_size,
             num_classes=self.num_classes,
             drop_path_rate=0.2,
             #global_pool=True,
+            args=checkpoint_args
         )
 
         return model   
@@ -57,16 +66,19 @@ class RetinaScanModel:
         if not os.path.exists(self.checkpoint_path):
             raise FileNotFoundError(f"Checkpoint file not found: {self.checkpoint_path}")
         
-        model = self._build_model()
-
         checkpoint = torch.load(
             self.checkpoint_path,
             map_location="cpu",
             weights_only=False,
         )
 
+        checkpoint_args = checkpoint["args"]  # 👈 pega args do treino
+
+        model = self._build_model(checkpoint_args)
+
         state_dict = checkpoint["model"] if "model" in checkpoint else checkpoint
-        model.load_state_dict(state_dict, strict=False)
+        model.load_state_dict(state_dict, strict=True)
+
         model.to(self.device)
         model.eval()
 
@@ -96,8 +108,12 @@ class RetinaScanModel:
         probs = F.softmax(logits, dim=-1).detach().cpu()
         print("probs shape:", probs.shape)
 
-        pred_idx = int(torch.argmax(probs, dim=-1)[0].item())
+        abnormal_prob = probs[0, 1].item()
+        pred_idx = 1 if abnormal_prob >= self.threshold else 0
+
         confidence = float(probs[0, pred_idx].item())
+
+        print("probs:", probs)
 
         probabilities = {
             CLASS_NAMES[i]: float(probs[0, i].item())

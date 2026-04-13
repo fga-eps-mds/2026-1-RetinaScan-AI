@@ -138,3 +138,7 @@ rfmid_binary
 checkpoints
 output_dir
 output_logs
+APTOS_2019
+aptos_binary
+ODIR-5K
+odir_binary

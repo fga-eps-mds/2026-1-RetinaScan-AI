@@ -22,7 +22,7 @@ ALLOWED_TYPES = {
 MAX_FILES = 2
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
-CHECKPOINT_PATH = PROJECT_ROOT / "output_dir" / "retfound_mae_RFMiD_binary_finetune" / "checkpoint-best.pth"
+CHECKPOINT_PATH = PROJECT_ROOT / "output_dir" / "retfound_dinov2_ODIR_binary_finetune" / "checkpoint-best.pth"
 
 predictor = None
 
@@ -31,9 +31,10 @@ async def lifespan(app: FastAPI):
     global predictor
     predictor = RetinaScanModel(
         checkpoint_path=CHECKPOINT_PATH,
-        model_name="RETFound_mae",
+        model_name="RETFound_dinov2",
         input_size=224,
         num_classes=2,
+        threshold=0.5,
     )
     yield
     predictor = None
