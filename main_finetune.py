@@ -39,36 +39,79 @@ def get_args_parser():
     )
 
     # ---- Core training
-    parser.add_argument("--batch_size", default=128, type=int,
-                        help="Batch size per GPU (effective batch size = batch_size * accum_iter * #gpus)")
+    parser.add_argument(
+        "--batch_size",
+        default=128,
+        type=int,
+        help="Batch size per GPU (effective batch size = batch_size * accum_iter * #gpus)",
+    )
     parser.add_argument("--epochs", default=50, type=int)
-    parser.add_argument("--accum_iter", default=1, type=int,
-                        help="Gradient accumulation steps")
+    parser.add_argument(
+        "--accum_iter", default=1, type=int, help="Gradient accumulation steps"
+    )
 
     # ---- Model parameters
-    parser.add_argument("--model", default="vit_large_patch16", type=str, metavar="MODEL",
-                        help="Model entry in models_vit.py")
-    parser.add_argument("--model_arch", default="dinov3_vits16", type=str, metavar="MODEL_ARCH",
-                        help="Backbone architecture key (e.g., dinov2_vitl14, convnext_base, etc.)")
+    parser.add_argument(
+        "--model",
+        default="vit_large_patch16",
+        type=str,
+        metavar="MODEL",
+        help="Model entry in models_vit.py",
+    )
+    parser.add_argument(
+        "--model_arch",
+        default="dinov3_vits16",
+        type=str,
+        metavar="MODEL_ARCH",
+        help="Backbone architecture key (e.g., dinov2_vitl14, convnext_base, etc.)",
+    )
     parser.add_argument("--input_size", default=256, type=int, help="Image size")
-    parser.add_argument("--drop_path", type=float, default=0.2, metavar="PCT", help="Drop path rate")
-    parser.add_argument("--global_pool", action="store_true"); parser.set_defaults(global_pool=True)
-    parser.add_argument("--cls_token", action="store_false", dest="global_pool",
-                        help="Use class token instead of global pool for classification")
+    parser.add_argument(
+        "--drop_path", type=float, default=0.2, metavar="PCT", help="Drop path rate"
+    )
+    parser.add_argument("--global_pool", action="store_true")
+    parser.set_defaults(global_pool=True)
+    parser.add_argument(
+        "--cls_token",
+        action="store_false",
+        dest="global_pool",
+        help="Use class token instead of global pool for classification",
+    )
 
     # ---- Optimizer parameters
-    parser.add_argument("--clip_grad", type=float, default=None, metavar="NORM", help="Clip grad norm")
+    parser.add_argument(
+        "--clip_grad", type=float, default=None, metavar="NORM", help="Clip grad norm"
+    )
     parser.add_argument("--weight_decay", type=float, default=0.05, help="Weight decay")
-    parser.add_argument("--lr", type=float, default=None, metavar="LR", help="Absolute LR (overrides blr)")
-    parser.add_argument("--blr", type=float, default=5e-3, metavar="LR",
-                        help="Base LR: lr = blr * total_batch_size / 256")
-    parser.add_argument("--layer_decay", type=float, default=0.65, help="Layer-wise LR decay (ViT)")
-    parser.add_argument("--min_lr", type=float, default=1e-6, metavar="LR", help="Lower LR bound")
-    parser.add_argument("--warmup_epochs", type=int, default=10, metavar="N", help="Warmup epochs")
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=None,
+        metavar="LR",
+        help="Absolute LR (overrides blr)",
+    )
+    parser.add_argument(
+        "--blr",
+        type=float,
+        default=5e-3,
+        metavar="LR",
+        help="Base LR: lr = blr * total_batch_size / 256",
+    )
+    parser.add_argument(
+        "--layer_decay", type=float, default=0.65, help="Layer-wise LR decay (ViT)"
+    )
+    parser.add_argument(
+        "--min_lr", type=float, default=1e-6, metavar="LR", help="Lower LR bound"
+    )
+    parser.add_argument(
+        "--warmup_epochs", type=int, default=10, metavar="N", help="Warmup epochs"
+    )
 
     # ---- Augmentation
     parser.add_argument("--color_jitter", type=float, default=None, metavar="PCT")
-    parser.add_argument("--aa", type=str, default="rand-m9-mstd0.5-inc1", metavar="NAME")
+    parser.add_argument(
+        "--aa", type=str, default="rand-m9-mstd0.5-inc1", metavar="NAME"
+    )
     parser.add_argument("--smoothing", type=float, default=0.1)
 
     # ---- Random erase
@@ -86,10 +129,21 @@ def get_args_parser():
     parser.add_argument("--mixup_mode", type=str, default="batch")
 
     # ---- Finetuning & adaptation
-    parser.add_argument("--finetune", default="", type=str, help="Checkpoint id/path (see model rules below)")
-    parser.add_argument("--task", default="", type=str, help="Task name for logging/output grouping")
-    parser.add_argument("--adaptation", default="finetune", choices=["finetune", "lp"],
-                        help="Adaptation strategy: finetune=full fine-tune, lp=linear probe (train head only)")
+    parser.add_argument(
+        "--finetune",
+        default="",
+        type=str,
+        help="Checkpoint id/path (see model rules below)",
+    )
+    parser.add_argument(
+        "--task", default="", type=str, help="Task name for logging/output grouping"
+    )
+    parser.add_argument(
+        "--adaptation",
+        default="finetune",
+        choices=["finetune", "lp"],
+        help="Adaptation strategy: finetune=full fine-tune, lp=linear probe (train head only)",
+    )
 
     # ---- Dataset & paths
     parser.add_argument("--data_path", default="./data/", type=str)
@@ -99,26 +153,38 @@ def get_args_parser():
 
     # >>> NEW: training data efficiency <<<
     parser.add_argument(
-        "--dataratio", type=str, default="1.0",
-        help=('Training data ratio(s) for subsampling in build_dataset. '
-              'Use a single float in (0,1] (e.g., 0.25) or a comma-separated list '
-              '(e.g., "1.0,0.5,0.25") if your build_dataset supports sweeps.')
+        "--dataratio",
+        type=str,
+        default="1.0",
+        help=(
+            "Training data ratio(s) for subsampling in build_dataset. "
+            "Use a single float in (0,1] (e.g., 0.25) or a comma-separated list "
+            '(e.g., "1.0,0.5,0.25") if your build_dataset supports sweeps.'
+        ),
     )
     parser.add_argument(
-        "--stratified", action="store_true",
-        help="If set, subsample training data in a class-stratified manner (requires support in build_dataset)."
+        "--stratified",
+        action="store_true",
+        help="If set, subsample training data in a class-stratified manner (requires support in build_dataset).",
     )
 
     # ---- Runtime
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--seed", default=0, type=int)
-    parser.add_argument("--resume", default="", help="Resume full state (optimizer, scaler, etc.)")
+    parser.add_argument(
+        "--resume", default="", help="Resume full state (optimizer, scaler, etc.)"
+    )
     parser.add_argument("--start_epoch", default=0, type=int, metavar="N")
     parser.add_argument("--eval", action="store_true", help="Evaluation only")
-    parser.add_argument("--dist_eval", action="store_true", default=False,
-                        help="Distributed evaluation (faster monitoring during training)")
+    parser.add_argument(
+        "--dist_eval",
+        action="store_true",
+        default=False,
+        help="Distributed evaluation (faster monitoring during training)",
+    )
     parser.add_argument("--num_workers", default=10, type=int)
-    parser.add_argument("--pin_mem", action="store_true"); parser.set_defaults(pin_mem=True)
+    parser.add_argument("--pin_mem", action="store_true")
+    parser.set_defaults(pin_mem=True)
 
     # ---- Distributed
     parser.add_argument("--world_size", default=1, type=int)
@@ -127,7 +193,9 @@ def get_args_parser():
     parser.add_argument("--dist_url", default="env://")
 
     # ---- Misc
-    parser.add_argument("--savemodel", action="store_true", default=True, help="Save best model")
+    parser.add_argument(
+        "--savemodel", action="store_true", default=True, help="Save best model"
+    )
     parser.add_argument("--norm", default="IMAGENET", type=str)
     parser.add_argument("--enhance", action="store_true", default=False)
     parser.add_argument("--datasets_seed", default=2026, type=int)
@@ -180,7 +248,6 @@ def main(args, criterion):
     if args.finetune and not args.eval:
         print(f"Preparing to load pre-trained weights: {args.finetune}")
 
-
         if args.model in ["Dinov3", "Dinov2"]:
             checkpoint_path = args.finetune
         elif args.model in ["RETFound_dinov2", "RETFound_mae"]:
@@ -189,7 +256,9 @@ def main(args, criterion):
                 checkpoint_path = args.finetune
             else:
                 # interpreta como repo ID do Hugging Face
-                print(f"Downloading pre-trained weights from Hugging Face Hub: {args.finetune}")
+                print(
+                    f"Downloading pre-trained weights from Hugging Face Hub: {args.finetune}"
+                )
                 checkpoint_path = hf_hub_download(
                     repo_id=f"YukunZhou/{args.finetune}",
                     filename=f"{args.finetune}.pth",
@@ -202,10 +271,10 @@ def main(args, criterion):
 
     # ---- Datasets & samplers
     dataset_train = build_dataset(is_train="train", args=args)
-    dataset_val   = build_dataset(is_train="val",   args=args)
-    dataset_test  = build_dataset(is_train="test",  args=args)
+    dataset_val = build_dataset(is_train="val", args=args)
+    dataset_test = build_dataset(is_train="test", args=args)
 
-    num_tasks   = misc.get_world_size()
+    num_tasks = misc.get_world_size()
     global_rank = misc.get_rank()
 
     if not args.eval:
@@ -215,7 +284,9 @@ def main(args, criterion):
         print(f"Sampler_train = {sampler_train}")
         if args.dist_eval:
             if len(dataset_val) % num_tasks != 0:
-                print("Warning: dist eval with dataset not divisible by #procs; results may differ slightly.")
+                print(
+                    "Warning: dist eval with dataset not divisible by #procs; results may differ slightly."
+                )
             sampler_val = torch.utils.data.DistributedSampler(
                 dataset_val, num_replicas=num_tasks, rank=global_rank, shuffle=True
             )
@@ -224,7 +295,9 @@ def main(args, criterion):
 
     if args.dist_eval:
         if len(dataset_test) % num_tasks != 0:
-            print("Warning: dist eval test set not divisible by #procs; results may differ slightly.")
+            print(
+                "Warning: dist eval test set not divisible by #procs; results may differ slightly."
+            )
         sampler_test = torch.utils.data.DistributedSampler(
             dataset_test, num_replicas=num_tasks, rank=global_rank, shuffle=True
         )
@@ -241,33 +314,49 @@ def main(args, criterion):
     # ---- DataLoaders
     if not args.eval:
         data_loader_train = torch.utils.data.DataLoader(
-            dataset_train, sampler=sampler_train,
-            batch_size=args.batch_size, num_workers=args.num_workers,
-            pin_memory=args.pin_mem, drop_last=True,
+            dataset_train,
+            sampler=sampler_train,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            pin_memory=args.pin_mem,
+            drop_last=True,
         )
         print(f"len of train_set: {len(data_loader_train) * args.batch_size}")
 
         data_loader_val = torch.utils.data.DataLoader(
-            dataset_val, sampler=sampler_val,
-            batch_size=args.batch_size, num_workers=args.num_workers,
-            pin_memory=args.pin_mem, drop_last=False,
+            dataset_val,
+            sampler=sampler_val,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            pin_memory=args.pin_mem,
+            drop_last=False,
         )
 
     data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, sampler=sampler_test,
-        batch_size=args.batch_size, num_workers=args.num_workers,
-        pin_memory=args.pin_mem, drop_last=False,
+        dataset_test,
+        sampler=sampler_test,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        pin_memory=args.pin_mem,
+        drop_last=False,
     )
 
     # ---- Mixup/CutMix
     mixup_fn = None
-    mixup_active = (args.mixup > 0) or (args.cutmix > 0.) or (args.cutmix_minmax is not None)
+    mixup_active = (
+        (args.mixup > 0) or (args.cutmix > 0.0) or (args.cutmix_minmax is not None)
+    )
     if mixup_active:
         print("Mixup is activated!")
         mixup_fn = Mixup(
-            mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
-            prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
-            label_smoothing=args.smoothing, num_classes=args.nb_classes
+            mixup_alpha=args.mixup,
+            cutmix_alpha=args.cutmix,
+            cutmix_minmax=args.cutmix_minmax,
+            prob=args.mixup_prob,
+            switch_prob=args.mixup_switch_prob,
+            mode=args.mixup_mode,
+            label_smoothing=args.smoothing,
+            num_classes=args.nb_classes,
         )
 
     # ---- Eval-only: resume weights
@@ -282,7 +371,7 @@ def main(args, criterion):
     # ---- Adaptation toggle
     if args.adaptation == "lp":
         for name, param in model.named_parameters():
-            param.requires_grad = ("head" in name)
+            param.requires_grad = "head" in name
         print("[Adaptation] Linear probe: training classifier head only.")
     else:
         print("[Adaptation] Full fine-tuning: training all parameters.")
@@ -313,9 +402,11 @@ def main(args, criterion):
         model_without_ddp = model  # single-GPU
 
     # ---- Optimizer param groups (after freezing)
-    no_weight_decay = (model_without_ddp.no_weight_decay()
-                       if hasattr(model_without_ddp, "no_weight_decay") else [])
-
+    no_weight_decay = (
+        model_without_ddp.no_weight_decay()
+        if hasattr(model_without_ddp, "no_weight_decay")
+        else []
+    )
 
     param_groups = lrd.param_groups_lrd(
         model_without_ddp,
@@ -331,18 +422,32 @@ def main(args, criterion):
     print(f"criterion = {criterion}")
 
     # ---- Load previous full state (optimizer, scaler, etc.)
-    misc.load_model(args=args, model_without_ddp=model_without_ddp,
-                    optimizer=optimizer, loss_scaler=loss_scaler)
+    misc.load_model(
+        args=args,
+        model_without_ddp=model_without_ddp,
+        optimizer=optimizer,
+        loss_scaler=loss_scaler,
+    )
 
     # =========================
     # Eval-only Short Circuit
     # =========================
     if args.eval:
-        if "checkpoint" in locals() and isinstance(checkpoint, dict) and ("epoch" in checkpoint):
+        if (
+            "checkpoint" in locals()
+            and isinstance(checkpoint, dict)
+            and ("epoch" in checkpoint)
+        ):
             print(f"Test with the best model at epoch = {checkpoint['epoch']}")
         test_stats, auc_roc = evaluate(
-            data_loader_test, model, device, args, epoch=0, mode="test",
-            num_class=args.nb_classes, log_writer=log_writer
+            data_loader_test,
+            model,
+            device,
+            args,
+            epoch=0,
+            mode="test",
+            num_class=args.nb_classes,
+            log_writer=log_writer,
         )
         return
 
@@ -359,15 +464,28 @@ def main(args, criterion):
             data_loader_train.sampler.set_epoch(epoch)
 
         train_stats = train_one_epoch(
-            model, criterion, data_loader_train,
-            optimizer, device, epoch, loss_scaler,
-            args.clip_grad, mixup_fn,
-            log_writer=log_writer, args=args
+            model,
+            criterion,
+            data_loader_train,
+            optimizer,
+            device,
+            epoch,
+            loss_scaler,
+            args.clip_grad,
+            mixup_fn,
+            log_writer=log_writer,
+            args=args,
         )
 
         val_stats, val_score = evaluate(
-            data_loader_val, model, device, args, epoch, mode="val",
-            num_class=args.nb_classes, log_writer=log_writer
+            data_loader_val,
+            model,
+            device,
+            args,
+            epoch,
+            mode="val",
+            num_class=args.nb_classes,
+            log_writer=log_writer,
         )
 
         if max_score < val_score:
@@ -375,8 +493,13 @@ def main(args, criterion):
             best_epoch = epoch
             if args.output_dir and args.savemodel:
                 misc.save_model(
-                    args=args, model=model, model_without_ddp=model_without_ddp,
-                    optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, mode="best"
+                    args=args,
+                    model=model,
+                    model_without_ddp=model_without_ddp,
+                    optimizer=optimizer,
+                    loss_scaler=loss_scaler,
+                    epoch=epoch,
+                    mode="best",
                 )
         print(f"Best epoch = {best_epoch}, Best score = {max_score:.4f}")
 
@@ -384,12 +507,18 @@ def main(args, criterion):
             log_writer.add_scalar("loss/val", val_stats["loss"], epoch)
             log_writer.flush()
 
-        log_stats = {**{f"train_{k}": v for k, v in train_stats.items()},
-                     "epoch": epoch,
-                     "n_parameters": n_parameters}
+        log_stats = {
+            **{f"train_{k}": v for k, v in train_stats.items()},
+            "epoch": epoch,
+            "n_parameters": n_parameters,
+        }
 
         if args.output_dir and misc.is_main_process():
-            with open(os.path.join(args.output_dir, args.task, "log.txt"), "a", encoding="utf-8") as f:
+            with open(
+                os.path.join(args.output_dir, args.task, "log.txt"),
+                "a",
+                encoding="utf-8",
+            ) as f:
                 f.write(json.dumps(log_stats) + "\n")
 
     # =========================
@@ -401,8 +530,14 @@ def main(args, criterion):
     model.to(device)
     print(f"Test with the best model, epoch = {checkpoint.get('epoch', -1)}:")
     _test_stats, _auc_roc = evaluate(
-        data_loader_test, model, device, args, -1, mode="test",
-        num_class=args.nb_classes, log_writer=None
+        data_loader_test,
+        model,
+        device,
+        args,
+        -1,
+        mode="test",
+        num_class=args.nb_classes,
+        log_writer=None,
     )
 
     total_time = time.time() - start_time

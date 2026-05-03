@@ -24,12 +24,14 @@ for split in SPLITS:
     os.makedirs(os.path.join(OUT, split, "0"), exist_ok=True)
     os.makedirs(os.path.join(OUT, split, "1"), exist_ok=True)
 
+
 def find_image(img_dir, image_id):
     for ext in [".png", ".jpg", ".jpeg", ".JPG", ".PNG"]:
         path = os.path.join(img_dir, str(image_id) + ext)
         if os.path.exists(path):
             return path
     return None
+
 
 for split, cfg in SPLITS.items():
     df = pd.read_csv(cfg["csv"])
