@@ -3,30 +3,33 @@
 # =========================
 import argparse
 import datetime
+import faulthandler
 import json
 import os
 import time
-from pathlib import Path
 import warnings
-import faulthandler
+from pathlib import Path
+
+# =========================
+import models_vit as models
 
 # =========================
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
-from torch.utils.tensorboard import SummaryWriter
-from timm.models.layers import trunc_normal_
-from timm.data.mixup import Mixup
-from huggingface_hub import hf_hub_download, login  # login imported as in original
-
-# =========================
-import models_vit as models
 import util.lr_decay as lrd
 import util.misc as misc
+from engine_finetune import evaluate, train_one_epoch
+from huggingface_hub import (  # login imported as in original  # noqa: F401
+    hf_hub_download,
+    login,
+)
+from timm.data.mixup import Mixup
+from timm.models.layers import trunc_normal_  # noqa: F401
+from torch.utils.tensorboard import SummaryWriter
 from util.datasets import build_dataset
-from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-from engine_finetune import train_one_epoch, evaluate
+from util.pos_embed import interpolate_pos_embed  # noqa: F401
 
 # =========================
 faulthandler.enable()
@@ -378,7 +381,7 @@ def main(args, criterion):
 
     # ---- Count trainable params
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"number of trainable params (M): {n_parameters / 1.e6:.2f}")
+    print(f"number of trainable params (M): {n_parameters / 1.0e6:.2f}")
 
     # ---- LR scaling by effective batch size
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()

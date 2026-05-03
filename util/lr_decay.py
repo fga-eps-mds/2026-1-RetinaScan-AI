@@ -3,7 +3,6 @@
 # Partly revised by YZ @UCL&Moorfields
 # --------------------------------------------------------
 
-import json
 
 
 def param_groups_lrd(

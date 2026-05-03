@@ -8,11 +8,11 @@ import datetime
 import os
 import time
 from collections import defaultdict, deque
+from math import inf
 from pathlib import Path
 
 import torch
 import torch.distributed as dist
-from math import inf
 
 
 class SmoothedValue(object):
@@ -328,8 +328,8 @@ def get_grad_norm_(parameters, norm_type: float = 2.0) -> torch.Tensor:
 
 
 def save_model(args, epoch, model, model_without_ddp, optimizer, loss_scaler, mode):
-    output_dir = Path(args.output_dir)
-    epoch_name = str(epoch)
+    output_dir = Path(args.output_dir)  # noqa: F841
+    epoch_name = str(epoch)  # noqa: F841
     os.makedirs(os.path.join(args.output_dir, args.task), exist_ok=True)
     if loss_scaler is not None:
         if mode == "best":

@@ -1,27 +1,28 @@
-import os
 import csv
+import os
+from typing import Iterable, Optional
+
+import matplotlib.pyplot as plt
+import numpy as np  # noqa: F401
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import Iterable, Optional
-from timm.data import Mixup
-from timm.utils import accuracy
+import util.lr_sched as lr_sched
+import util.misc as misc
+from pycm import ConfusionMatrix
 from sklearn.metrics import (
     accuracy_score,
-    roc_auc_score,
-    f1_score,
     average_precision_score,
+    cohen_kappa_score,
+    f1_score,
     hamming_loss,
     jaccard_score,
-    recall_score,
     precision_score,
-    cohen_kappa_score,
+    recall_score,
+    roc_auc_score,
 )
-from pycm import ConfusionMatrix
-import util.misc as misc
-import util.lr_sched as lr_sched
+from timm.data import Mixup
+from timm.utils import accuracy  # noqa: F401
 
 
 def train_one_epoch(
@@ -55,8 +56,9 @@ def train_one_epoch(
                 optimizer, data_iter_step / len(data_loader) + epoch, args
             )
 
-        samples, targets = samples.to(device, non_blocking=True), targets.to(
-            device, non_blocking=True
+        samples, targets = (
+            samples.to(device, non_blocking=True),
+            targets.to(device, non_blocking=True),
         )
         if mixup_fn:
             samples, targets = mixup_fn(samples, targets)
@@ -119,8 +121,9 @@ def evaluate(data_loader, model, device, args, epoch, mode, num_class, log_write
     )
 
     for batch in metric_logger.log_every(data_loader, 10, f"{mode}:"):
-        images, target = batch[0].to(device, non_blocking=True), batch[-1].to(
-            device, non_blocking=True
+        images, target = (
+            batch[0].to(device, non_blocking=True),
+            batch[-1].to(device, non_blocking=True),
         )
         target_onehot = F.one_hot(target.to(torch.int64), num_classes=num_class)
 
@@ -138,7 +141,7 @@ def evaluate(data_loader, model, device, args, epoch, mode, num_class, log_write
         pred_labels.extend(output_label.detach().cpu().numpy())
         pred_softmax.extend(output_.detach().cpu().numpy())
 
-    accuracy = accuracy_score(true_labels, pred_labels)
+    accuracy = accuracy_score(true_labels, pred_labels)  # noqa: F811
     hamming = hamming_loss(true_onehot, pred_onehot)
     jaccard = jaccard_score(true_onehot, pred_onehot, average="macro")
     average_precision = average_precision_score(
@@ -184,7 +187,7 @@ def evaluate(data_loader, model, device, args, epoch, mode, num_class, log_write
         ):
             log_writer.add_scalar(f"perf/{metric_name}", value, epoch)
 
-    print(f'val loss: {metric_logger.meters["loss"].global_avg}')
+    print(f"val loss: {metric_logger.meters['loss'].global_avg}")
     print(
         f"Accuracy: {accuracy:.4f}, F1 Score: {f1:.4f}, ROC AUC: {roc_auc:.4f}, Hamming Loss: {hamming:.4f},\n"
         f" Jaccard Score: {jaccard:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f},\n"

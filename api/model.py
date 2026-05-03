@@ -1,7 +1,8 @@
 import os
-from io import BytesIO
 import sys
+from io import BytesIO
 
+import models_vit as models
 import torch
 import torch.nn.functional as F
 from PIL import Image
@@ -13,8 +14,6 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-import models_vit as models
-from timm import create_model
 
 CLASS_NAMES = {
     0: "normal",

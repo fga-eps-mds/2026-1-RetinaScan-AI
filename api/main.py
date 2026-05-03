@@ -126,7 +126,7 @@ async def analyze_retina(file: UploadFile = File(...)):
 
     try:
         image_bytes = await file.read()
-        masked_image = retina_contour(image_bytes)
+        masked_image = retina_contour(image_bytes)  # noqa: F841
 
         # inserir a seguir os proximos passos da análise das imagens pela IA.
 
