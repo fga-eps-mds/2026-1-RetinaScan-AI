@@ -53,7 +53,9 @@ def train_one_epoch(
     ):
         if data_iter_step % accum_iter == 0:
             lr_sched.adjust_learning_rate(
-                optimizer, data_iter_step / len(data_loader) + epoch, args
+                optimizer,
+                data_iter_step / len(data_loader) + epoch,
+                args,  # type: ignore
             )
 
         samples, targets = (
@@ -95,7 +97,7 @@ def train_one_epoch(
             """We use epoch_1000x as the x-axis in tensorboard.
             This calibrates different curves when batch size changes.
             """
-            epoch_1000x = int((data_iter_step / len(data_loader) + epoch) * 1000)
+            epoch_1000x = int((data_iter_step / len(data_loader) + epoch) * 1000)  # type: ignore
             log_writer.add_scalar("loss/train", loss_value_reduce, epoch_1000x)
             log_writer.add_scalar("lr", max_lr, epoch_1000x)
 
@@ -233,7 +235,10 @@ def evaluate(data_loader, model, device, args, epoch, mode, num_class, log_write
     if mode == "test":
         cm = ConfusionMatrix(actual_vector=true_labels, predict_vector=pred_labels)
         cm.plot(
-            cmap=plt.cm.Blues, number_label=True, normalized=True, plot_lib="matplotlib"
+            cmap=plt.cm.Blues,  # type: ignore
+            number_label=True,
+            normalized=True,
+            plot_lib="matplotlib",
         )
         plt.savefig(
             os.path.join(args.output_dir, args.task, "confusion_matrix_test.jpg"),

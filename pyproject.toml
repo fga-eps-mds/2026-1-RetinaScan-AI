@@ -1,0 +1,11 @@
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+explicit_package_bases = true
+mypy_path = "."
+disable_error_code = ["var-annotated", "arg-type", "assignment"]
+
+[[tool.mypy.overrides]]
+module = ["torch.*", "torchvision.*", "timm.*", "sklearn.*", "matplotlib.*"]
+ignore_missing_imports = true

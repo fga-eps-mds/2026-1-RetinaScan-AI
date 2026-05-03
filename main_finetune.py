@@ -464,7 +464,7 @@ def main(args, criterion):
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
-            data_loader_train.sampler.set_epoch(epoch)
+            data_loader_train.sampler.set_epoch(epoch)  # type: ignore
 
         train_stats = train_one_epoch(
             model,

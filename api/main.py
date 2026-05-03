@@ -120,7 +120,7 @@ async def predict(files: List[UploadFile] = File(...)):
 
 @app.post("/api/v1/analyze")
 async def analyze_retina(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
+    if file.content_type is None or not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=400, detail="O arquivo enviado não é uma imagem válida."
         )

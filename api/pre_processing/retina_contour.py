@@ -34,7 +34,7 @@ def retina_contour(image_bytes):
 
         mask = np.zeros_like(gray)
 
-        cv2.drawContours(mask, [largest_contour], -1, (255), thickness=cv2.FILLED)
+        cv2.drawContours(mask, [largest_contour], -1, (255,), thickness=cv2.FILLED)
 
         masked_image = cv2.bitwise_and(img, img, mask=mask)
 
