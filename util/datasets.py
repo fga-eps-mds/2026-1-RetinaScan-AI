@@ -5,12 +5,13 @@ from torchvision import datasets, transforms
 from timm.data import create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
+
 def build_dataset(is_train, args):
     transform = build_transform(is_train, args)
     root = os.path.join(args.data_path, is_train)
     dataset = datasets.ImageFolder(root, transform=transform)
 
-    if is_train == 'train':
+    if is_train == "train":
         ratio = float(getattr(args, "dataratio", 1.0))
         seed = int(getattr(args, "seed", 0))
         stratified = bool(getattr(args, "stratified", False))
@@ -28,17 +29,18 @@ def build_dataset(is_train, args):
 
     return dataset
 
+
 def build_transform(is_train, args):
     mean = IMAGENET_DEFAULT_MEAN
     std = IMAGENET_DEFAULT_STD
 
-    if is_train == 'train':
+    if is_train == "train":
         return create_transform(
             input_size=args.input_size,
             is_training=True,
             color_jitter=args.color_jitter,
             auto_augment=args.aa,
-            interpolation='bicubic',
+            interpolation="bicubic",
             re_prob=args.reprob,
             re_mode=args.remode,
             re_count=args.recount,
@@ -57,7 +59,9 @@ def build_transform(is_train, args):
     ]
     return transforms.Compose(t)
 
+
 # ---- helpers ----
+
 
 def _stratified_indices(targets, ratio: float, seed: int):
     """Maintain class proportions. Ensures at least 1 sample per class when possible."""
@@ -78,4 +82,3 @@ def _stratified_indices(targets, ratio: float, seed: int):
     g2 = torch.Generator().manual_seed(seed + 1)
     keep = torch.tensor(keep)[torch.randperm(len(keep), generator=g2)].tolist()
     return keep
-
