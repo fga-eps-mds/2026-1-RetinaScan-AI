@@ -16,47 +16,58 @@ if PROJECT_ROOT not in sys.path:
 import models_vit as models
 from timm import create_model
 
-
 CLASS_NAMES = {
-    0: 'normal',
-    1: 'abnormal',
+    0: "normal",
+    1: "abnormal",
 }
 
+
 class RetinaScanModel:
-    def __init__(self, checkpoint_path, model_name= 'RETFound_mae', input_size: int = 224, num_classes: int = 2, device: str | None = None):
+    def __init__(
+        self,
+        checkpoint_path,
+        model_name="RETFound_mae",
+        input_size: int = 224,
+        num_classes: int = 2,
+        device: str | None = None,
+    ):
         self.checkpoint_path = checkpoint_path
         self.model_name = model_name
         self.input_size = input_size
         self.num_classes = num_classes
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.transform = transforms.Compose([
-            transforms.Resize((input_size, input_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ),
-        ])
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((input_size, input_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                ),
+            ]
+        )
 
         self.model = self._load_model()
 
         pass
 
-    def _build_model(self): 
+    def _build_model(self):
         model = models.__dict__[self.model_name](
             img_size=self.input_size,
             num_classes=self.num_classes,
             drop_path_rate=0.2,
-            #global_pool=True,
+            # global_pool=True,
         )
 
-        return model   
+        return model
 
     def _load_model(self):
         if not os.path.exists(self.checkpoint_path):
-            raise FileNotFoundError(f"Checkpoint file not found: {self.checkpoint_path}")
-        
+            raise FileNotFoundError(
+                f"Checkpoint file not found: {self.checkpoint_path}"
+            )
+
         model = self._build_model()
 
         checkpoint = torch.load(
@@ -71,13 +82,13 @@ class RetinaScanModel:
         model.eval()
 
         return model
-    
+
     def _prepare_image(self, image_bytes: bytes):
-        image = Image.open(BytesIO(image_bytes)).convert('RGB')
+        image = Image.open(BytesIO(image_bytes)).convert("RGB")
         tensor = self.transform(image).unsqueeze(0)
 
         return tensor.to(self.device)
-    
+
     @torch.no_grad()
     def predict_bytes(self, image_bytes: bytes):
         x = self._prepare_image(image_bytes)
@@ -100,8 +111,7 @@ class RetinaScanModel:
         confidence = float(probs[0, pred_idx].item())
 
         probabilities = {
-            CLASS_NAMES[i]: float(probs[0, i].item())
-            for i in range(self.num_classes)
+            CLASS_NAMES[i]: float(probs[0, i].item()) for i in range(self.num_classes)
         }
 
         return {
