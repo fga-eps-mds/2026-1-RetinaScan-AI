@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from util.pre_processing.retina_contour import retina_contour
+from pre_processing.retina_contour import retina_contour
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
