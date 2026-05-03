@@ -1,9 +1,12 @@
 import os
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List
 
 from pre_processing.retina_contour import retina_contour
+
+from .model import RetinaScanModel
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
@@ -31,23 +34,25 @@ CHECKPOINT_PATH = (
 
 predictor = None
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     global predictor
-#     predictor = RetinaScanModel(
-#         checkpoint_path=CHECKPOINT_PATH,
-#         model_name="RETFound_mae",
-#         input_size=224,
-#         num_classes=2,
-#     )
-#     yield
-#     predictor = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global predictor
+    predictor = RetinaScanModel(
+        checkpoint_path=CHECKPOINT_PATH,
+        model_name="RETFound_mae",
+        input_size=224,
+        num_classes=2,
+    )
+    yield
+    predictor = None
+
 
 app = FastAPI(
     title="RetinaScan-AI API",
     version="0.0.1",
     description="API para diagnostico de imagens de retina com IA",
-    # lifespan=lifespan,
+    lifespan=lifespan,
 )
 
 
