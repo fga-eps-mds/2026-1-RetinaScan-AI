@@ -2,42 +2,50 @@ import cv2
 import numpy as np
 
 
-def retina_contour(image_bytes):
+def apply_retina_contour(img: np.ndarray) -> np.ndarray:
+    """
+    Recebe a imagem da retina limpa de metadados e foca em isolar
+    o formato circular do fundo de olho, removendo o fundo preto desnecessário.
+    """
     try:
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img.dtype != np.uint8:
+            img_calc = cv2.normalize(
+                img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U
+            )  # type: ignore[call-overload]
+        else:
+            img_calc = img
 
-        if img is None:
-            raise ValueError(
-                "Falha ao decodificar a imagem. O arquivo pode ser inválido ou corrompido."
-            )
+        gray = cv2.cvtColor(img_calc, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, thresh = cv2.threshold(blurred, 15, 255, cv2.THRESH_BINARY)
 
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (35, 35))
+        thresh_limpa = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
         contours, _ = cv2.findContours(
-            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            thresh_limpa, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
 
         if not contours:
-            raise ValueError(
-                "Nenhum contorno encontrado. A imagem pode estar completamente escura."
-            )
+            raise ValueError("Nenhum contorno válido encontrado após a limpeza.")
 
         largest_contour = max(contours, key=cv2.contourArea)
 
         if cv2.contourArea(largest_contour) < 1000:
-            raise ValueError(
-                "A área identificada é muito pequena para ser uma imagem de exame válida."
-            )
+            raise ValueError("Área identificada é muito pequena.")
 
-        mask = np.zeros_like(gray)
-
+        mask = np.zeros(gray.shape, dtype=np.uint8)
         cv2.drawContours(mask, [largest_contour], -1, (255,), thickness=cv2.FILLED)
 
         masked_image = cv2.bitwise_and(img, img, mask=mask)
 
-        return masked_image
+        x, y, w, h = cv2.boundingRect(largest_contour)
+        cropped_masked_image = masked_image[y : y + h, x : x + w]
+
+        return cropped_masked_image
+
+    except ValueError:
+        raise
+
     except Exception as e:
         raise RuntimeError(f"Erro no processamento da imagem: {str(e)}")
