@@ -5,7 +5,8 @@ import sys
 from pathlib import Path
 from typing import List
 
-from pre_processing.retina_contour import retina_contour
+from api.pre_processing.image_loader import convert_to_clean_png, load_and_clean_image
+from api.pre_processing.retina_contour import apply_retina_contour
 
 # from .model import RetinaScanModel
 
@@ -120,23 +121,41 @@ async def predict(files: List[UploadFile] = File(...)):
 
 @app.post("/api/v1/analyze")
 async def analyze_retina(file: UploadFile = File(...)):
-    if file.content_type is None or not file.content_type.startswith("image/"):
+    """
+    Endpoint para recepção, limpeza e pré-processamento inicial do exame. Garante a anonimização antes
+    de qualquer análise posterior.
+    """
+    valid_extensions = (".png", ".jpg", ".jpeg", ".dcm", ".dicom")
+
+    filename = (file.filename or "").lower()
+
+    if not filename.endswith(valid_extensions):
         raise HTTPException(
-            status_code=400, detail="O arquivo enviado não é uma imagem válida."
+            status_code=400,
+            detail=f"Formato não suportado. Envie imagens em {', '.join(valid_extensions)}.",
         )
 
     try:
         image_bytes = await file.read()
-        masked_image = retina_contour(image_bytes)  # noqa: F841
 
-        # inserir a seguir os proximos passos da análise das imagens pela IA.
+        clean_img_array = load_and_clean_image(image_bytes, file.filename)
 
-        return {"status": "Pré-processamento concluído com sucesso."}
+        cropped_masked_image = apply_retina_contour(clean_img_array)
 
-    except RuntimeError as e:
+        final_png_bytes = convert_to_clean_png(cropped_masked_image)  # noqa: F841
+
+        # Inserir os próximos passos da IA aqui
+
+        return {
+            "status": "Pré-processamento concluído",
+            "message": "Metadados sensíveis removidos e imagem isolada com sucesso.",
+        }
+
+    except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
-
-    except Exception as e:
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
         raise HTTPException(
-            status_code=500, detail=f"Erro interno no processamento: {str(e)}"
+            status_code=500, detail="Erro interno inesperado no processamento."
         )

@@ -1,26 +1,51 @@
 import cv2
 import numpy as np
 import pytest
-from pre_processing.retina_contour import retina_contour
+from api.pre_processing.retina_contour import apply_retina_contour
 
 
-def test_retina_contour_sucesso():
-    img = np.zeros((100, 100, 3), dtype=np.uint8)
-    cv2.circle(img, (50, 50), 30, (255, 255, 255), -1)
+def test_apply_retina_contour_sucesso():
+    """
+    Testa se a função recorta corretamente uma imagem válida (que contém um formato circular identificável),
+    removendo o excesso de fundo preto e mantendo os canais de cor originais.
+    """
+    img = np.zeros((200, 200, 3), dtype=np.uint8)
 
-    _, buffer = cv2.imencode(".jpg", img)
-    fake_image_bytes = buffer.tobytes()
+    cv2.circle(img, (100, 100), 50, (255, 255, 255), -1)
 
-    masked_img = retina_contour(fake_image_bytes)
+    cropped_img = apply_retina_contour(img)
 
-    assert masked_img is not None
-    assert masked_img.shape == (100, 100, 3)
+    assert cropped_img is not None
+
+    assert cropped_img.shape[0] < 200
+    assert cropped_img.shape[1] < 200
+    assert cropped_img.shape[2] == 3
 
 
-def test_retina_contour_falha_com_lixo():
-    bytes_invalidos = b"isso_nao_e_uma_imagem_de_verdade"
+def test_apply_retina_contour_imagem_escura():
+    """
+    Testa se a função levanta o erro apropriado (ValueError) quando recebe uma imagem
+    completamente escura ou sem contornos suficientes para identificar o globo ocular.
+    """
+    img_preta = np.zeros((100, 100, 3), dtype=np.uint8)
 
-    with pytest.raises(RuntimeError) as excinfo:
-        retina_contour(bytes_invalidos)
+    with pytest.raises(ValueError) as excinfo:
+        apply_retina_contour(img_preta)
 
-    assert "Erro no processamento" in str(excinfo.value)
+    assert "Nenhum contorno válido" in str(excinfo.value)
+
+
+def test_apply_retina_contour_16bits():
+    """
+    Garante que imagens médicas de 16 bits sejam processadas sem erro e sem perder a
+    profundidade de pixels no resultado final.
+    """
+    img_16 = np.zeros((200, 200, 3), dtype=np.uint16)
+
+    cv2.circle(img_16, (100, 100), 50, (65535, 65535, 65535), -1)
+
+    cropped_img = apply_retina_contour(img_16)
+
+    assert cropped_img is not None
+    assert cropped_img.dtype == np.uint16
+    assert cropped_img.shape[0] < 200
