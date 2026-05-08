@@ -68,11 +68,11 @@ pydantic_core==2.41.5
 pydicom==3.0.2
 Pygments==2.20.0
 pylibjpeg==2.1.0
-pylibjpeg-libjpeg==2.4.0
 pyparsing==3.3.2
 pytest==9.0.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
+python-gdcm==3.2.2
 python-multipart==0.0.24
 pytokens==0.4.1
 PyYAML==6.0.3
@@ -105,3 +105,4 @@ uvloop==0.22.1
 watchfiles==1.1.1
 websockets==16.0
 Werkzeug==3.1.8
+wheel==0.47.0
