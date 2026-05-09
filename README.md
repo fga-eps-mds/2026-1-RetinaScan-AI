@@ -1,32 +1,43 @@
 # 2026-1-RetinaScan-AI
 
-Repositório do projeto RetinaScan AI em 2026.1, usando o modelo RETFound‑MAE para fine‑tune em imagens de retina (RFMiD).
+Repositório do projeto RetinaScan AI em 2026.1, que tem como objetivo classificação de imagens de retina utilizando *Deep Learning,* com suporte a múltiplos modelos para experimentação e comparação no *dataset* RFMiD.
 
----
+## Pipeline do projeto
 
-## Links
-Demo (se disponível):
-Preview: Não implantado ainda
-Dashboard de treino: Verifique a pasta ./output_logs após executar o fine‑tune.
-
----
+1. Preparar ambiente
+2. Organizar dataset
+3. Treinar modelo
+4. Avaliar resultados
+5. Visualizar logs
 
 ## Instalação
 
-Criar ambiente virtual
+### 1. Criar ambiente virtual
 
 ```bash
-python3 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate
 ```
 
-Instalar dependências
+**Obs:** **É necessário utilizar o Python 3.12**
+
+Se quiser sair do ambiente virtual utilize o comando:
+
+```bash
+deactivate
+```
+
+### 2. Instalar dependências
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Baixar o checkpoint RETFound‑MAE
+```bash
+pip install pandas
+```
+
+### Baixar o checkpoint RETFound-MAE
 
 ```bash
 mkdir -p ./checkpoints
@@ -34,73 +45,110 @@ mkdir -p ./checkpoints
 
 Baixe o modelo em: https://huggingface.co/YukunZhou/RETFound_mae_natureCFP
 
-Cole o arquivo `.pth` em `checkpoints`
+Coloque o arquivo `.pth` em:
 
----
+`./checkpoints/` 
 
-## Configuração do dataset
+## Dataset
 
-Organize o dataset RFMiD no formato binário usando o script em `./scripts`:
+Utilizamos o dataset **RFMiD** (Retinal Fundus Multi-Disease Image Dataset)
+
+Será necessário baixar o dataset:
+
+`A. RFMiD_All_Classes_Dataset.zip` 
+
+Após baixar este aquivo `.zip` , será preciso extrair e colocar a pasta na raiz do projeto. 
+
+### Organização automática
+
+Após adicionar a pasta extraída a raiz do projeto, no seu terminal rode o comando:
 
 ```bash
-python3 ./scripts/organizar_RFMID.py
+cd scripts/
 ```
 
-Estrutura esperada:
+Dentro desta pasta execute o script:
+
+```bash
+python3 ./organizar_RFMID.py
+```
+
+### Estrutura esperada
 
 ```
 ../rfmid_binary/
   train/
-    0/
-    1/
-  val/
-    0/
-    1/
-  test/
-    0/
-    1/
+		0/
+		1/
+	val/
+		0/
+		1/
+	test/
+		0/
+		1/
 ```
 
----
+### Configuração
 
-## Treinamento (fine‑tune)
+Antes de treinar, revise:
 
-Certifique‑se de estar na raiz do repositório
+| Parâmetro | Descrição |
+| --- | --- |
+| `DATA_PATH` | Caminho do dataset |
+| `OUTPUT_DIR` | Diretório de saída |
+| `BATCH_SIZE` | Depende da GPU |
+| `DEVICE` | `cuda` ou `cpu`  |
 
-Rode o fine‑tune em 1 GPU:
+### Treinamento (fine-tune)
+
+Certifique-se de estar na raiz do repositório
+
+Rode o fine-tune em GPU:
 
 ```bash
 sh train.sh
 ```
 
-Certifique‑se de que `DATA_PATH` no `train.sh` aponta para o seu dataset organizado (por exemplo, `../rfmid_binary` ou um symlink `.rfmid_binary`).
+Certifique-se de que `DATA_PATH` no `train.sh` aponta para o seu dataset organizado (`../rfmid_binary` ou um symlink `.rfmid_binary` ).
 
-Logs e checkpoints serão salvos em:
+### Parâmetros úteis
+
+```yaml
+ --batch_size 16
+ --epochs 50
+ --lr 1e-4
+ --eval
+```
+
+### Logs e resultados
+
+Os resultados são salvos em: 
 
 - ./output_dir/retfound_mae_RFMiD_binary_finetune/
-
 - ./output_logs/retfound_mae_RFMiD_binary_finetune/
 
----
+### Executar o TensorBoard
 
-## Executar TensorBoard
+O TensorBoard é uma ferramenta de visualização que permite acompanhar o progresso do treinamento em tempo real, incluindo métricas como loss, acurácia, gráficos e evolução dos parâmetros do modelo.
+
+Execute: 
 
 ```bash
 tensorboard --logdir ./output_logs
 ```
 
-Acesse em: `http://localhost:6006`
+Acesse: 
 
----
+`http://localhost:6006` 
 
-## Avaliação
+### Avaliação
 
-Após o treino, o melhor modelo será automaticamente salvo como:
+Após o treino, o melhor será automaticamente salvo como:
 
-```
+```bash
 ./output_dir/retfound_mae_RFMiD_binary_finetune/checkpoint-best.pth
 ```
 
-Esse checkpoint será carregado para avaliação final no final do treino (se `args.eval` estiver habilitado ou se você rodar o script novamente com `--eval`).
+Esse checkpoint será carregado para avaliação final no final do treino (se `args.eval`) estiver habilitado ou se você rodar o script novamente com `--eval` ).
 
-Se quiser avaliar manualmente, basta adaptar --task e --resume no main_finetune.py ou criar um pequeno script de avaliação.
+Se quiser avaliar manualmente, basta adaptar `--task`  e `--resume` no main_finetune.py ou criar um pequeno script de avaliação.

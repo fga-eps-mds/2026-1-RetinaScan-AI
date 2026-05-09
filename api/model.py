@@ -1,7 +1,8 @@
 import os
-from io import BytesIO
 import sys
+from io import BytesIO
 
+import models_vit as models
 import torch
 import torch.nn.functional as F
 from PIL import Image
@@ -13,14 +14,12 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-import models_vit as models
-from timm import create_model
-
 
 CLASS_NAMES = {
-    0: 'normal',
-    1: 'abnormal',
+    0: "normal",
+    1: "abnormal",
 }
+
 
 class RetinaScanModel:
     def __init__(
@@ -60,7 +59,7 @@ class RetinaScanModel:
             args=checkpoint_args
         )
 
-        return model   
+        return model
 
     def _load_model(self):
         if not os.path.exists(self.checkpoint_path):
@@ -83,13 +82,13 @@ class RetinaScanModel:
         model.eval()
 
         return model
-    
+
     def _prepare_image(self, image_bytes: bytes):
-        image = Image.open(BytesIO(image_bytes)).convert('RGB')
+        image = Image.open(BytesIO(image_bytes)).convert("RGB")
         tensor = self.transform(image).unsqueeze(0)
 
         return tensor.to(self.device)
-    
+
     @torch.no_grad()
     def predict_bytes(self, image_bytes: bytes):
         x = self._prepare_image(image_bytes)
@@ -116,8 +115,7 @@ class RetinaScanModel:
         print("probs:", probs)
 
         probabilities = {
-            CLASS_NAMES[i]: float(probs[0, i].item())
-            for i in range(self.num_classes)
+            CLASS_NAMES[i]: float(probs[0, i].item()) for i in range(self.num_classes)
         }
 
         return {
