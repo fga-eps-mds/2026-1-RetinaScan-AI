@@ -1,5 +1,5 @@
 # infra/queue/tasks/steps/run_inference.py
-import logging
+import httpx
 
 from infra.queue.celery_app import celery_app
 from infra.storage.minio import get_minio_client, download_object_bytes
@@ -7,14 +7,26 @@ from domains.exams.models.retina_scan_model import get_retina_scan_model
 from infra.logger.logger import logger
 
 
-@celery_app.task(name="domains.exams.steps.run_inference")
-def run_inference(payload: dict) -> dict:
+@celery_app.task(
+    bind=True,
+    name="domains.exams.steps.run_inference",
+    autoretry_for=(httpx.RequestError, TimeoutError, ConnectionError),
+    retry_backoff=True,
+    retry_jitter=True,
+    retry_kwargs={"max_retries": 3},
+)
+def run_inference(self, payload: dict) -> dict:
     exam_id = payload["exam_id"]
     left_key = payload["artifacts"]["left_processed_key"]
     right_key = payload["artifacts"]["right_processed_key"]
 
-    logger.info("Iniciando inferência | exam_id=%s | left=%s | right=%s", 
-                exam_id, left_key, right_key)
+    logger.info(
+        "Iniciando inferência | exam_id=%s | task_id=%s | left=%s | right=%s",
+        exam_id,
+        self.request.id,
+        left_key,
+        right_key,
+    )
 
     minio_client = get_minio_client()
     left_bytes = download_object_bytes(minio_client, left_key)
@@ -31,5 +43,5 @@ def run_inference(payload: dict) -> dict:
     }
     payload["meta"]["inference_done"] = True
 
-    logger.info("Inferência concluída | exam_id=%s", exam_id)
+    logger.info("Inferência concluída | exam_id=%s | task_id=%s", exam_id, self.request.id)
     return payload

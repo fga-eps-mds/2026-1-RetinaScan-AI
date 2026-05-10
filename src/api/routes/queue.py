@@ -1,5 +1,6 @@
 # src/api/routes/queue.py
 import json
+from celery.result import AsyncResult
 from typing import Any
 
 from fastapi import APIRouter
@@ -7,7 +8,7 @@ from fastapi import APIRouter
 from infra.queue.celery_app import celery_app
 from infra.queue.redis_client import get_redis_client
 
-router = APIRouter(prefix="/queue", tags=["queue"])
+router = APIRouter()
 
 QUEUE_NAME = "retinal_scan_queue"
 RESULT_KEY_PREFIX = "celery-task-meta-"
@@ -166,3 +167,24 @@ async def list_queue_tasks():
         },
         "broker_preview": broker_preview,
     }
+
+@router.get("/status/{task_id}")
+async def get_exam_status(task_id: str):
+    result = AsyncResult(task_id, app=celery_app)
+
+    response = {
+        "task_id": task_id,
+        "status": result.status,
+        "ready": result.ready(),
+        "successful": result.successful() if result.ready() else False,
+        "failed": result.failed(),
+    }
+
+    if result.status == "FAILURE":
+        response["error"] = str(result.result)
+        response["traceback"] = result.traceback
+
+    elif result.status == "SUCCESS":
+        response["result"] = result.result
+
+    return response
