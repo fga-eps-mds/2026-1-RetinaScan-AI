@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     REDIS_URL: str
 
-    WEBHOOK_URL: str = "https://webhook.site/206a0b59-a9c1-4fef-8608-d93e2869dda2"
+    WEBHOOK_URL: str = "http://localhost:3000"
     WEBHOOK_TIMEOUT: int = 30
 
     model_config = SettingsConfigDict(

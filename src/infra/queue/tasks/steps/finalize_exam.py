@@ -1,9 +1,14 @@
-# infra/queue/tasks/steps/finalize_exam.py
+import mimetypes
 import httpx
 
 from infra.queue.celery_app import celery_app
 from infra.settings.settings import settings
 from infra.logger.logger import logger
+
+
+def _content_type(path: str) -> str:
+    content_type, _ = mimetypes.guess_type(path)
+    return content_type or "application/octet-stream"
 
 
 @celery_app.task(
@@ -26,8 +31,8 @@ def finalize_exam(self, payload: dict) -> dict:
     left_result = payload["result"]["left_eye"]
     right_result = payload["result"]["right_eye"]
 
-    left_filename = payload["left_image_key"].split("/")[-1]
-    right_filename = payload["right_image_key"].split("/")[-1]
+    left_filename = payload["left_image_key"]
+    right_filename = payload["right_image_key"]
 
     webhook_payload = {
         "total_images": 2,
@@ -35,12 +40,12 @@ def finalize_exam(self, payload: dict) -> dict:
         "results": [
             {
                 "filename": left_filename,
-                "content_type": "image/png",
+                "content_type": _content_type(left_filename),
                 **left_result,
             },
             {
                 "filename": right_filename,
-                "content_type": "image/png",
+                "content_type": _content_type(right_filename),
                 **right_result,
             },
         ],
@@ -48,7 +53,7 @@ def finalize_exam(self, payload: dict) -> dict:
 
     try:
         response = httpx.post(
-            settings.WEBHOOK_URL,
+            f"{settings.WEBHOOK_URL}/api/exams/{exam_id}/webhook",
             json=webhook_payload,
             timeout=30.0,
             headers={"Content-Type": "application/json"},
@@ -66,10 +71,11 @@ def finalize_exam(self, payload: dict) -> dict:
         status_code = exc.response.status_code
 
         logger.error(
-            "Webhook retornou erro HTTP | exam_id=%s | status=%s | body=%s",
+            "Webhook retornou erro HTTP | exam_id=%s | status=%s | body=%s | payload=%s",
             exam_id,
             status_code,
             exc.response.text,
+            webhook_payload,
         )
 
         if status_code >= 500:
