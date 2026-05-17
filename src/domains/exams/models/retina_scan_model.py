@@ -122,7 +122,7 @@ def get_retina_scan_model() -> RetinaScanModel:
     """Singleton otimizado por worker"""
     global _model_instance
     if _model_instance is None:
-        checkpoint_path = Path(SRC_ROOT) / "checkpoint" / "dinov2_ODIR_RFMiD_v2.1.0-best.pth"
+        checkpoint_path = Path(SRC_ROOT) / "checkpoint" / "dinov2_ODIR_v2.0.0-best.pth"
         _model_instance = RetinaScanModel(
             checkpoint_path=checkpoint_path,
             model_name="RETFound_dinov2",
