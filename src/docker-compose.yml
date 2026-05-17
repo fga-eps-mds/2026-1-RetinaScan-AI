@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  api:
+    container_name: retinascan-ai-api
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/venv
+      - /app/.venv
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  celery:
+    container_name: retinascan-ai-celery
+    build: .
+    command: celery -A infra.queue.celery_app worker --loglevel=info --pool=prefork --concurrency=4
+    volumes:
+      - .:/app
+      - /app/venv
+      - /app/.venv
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    container_name: retinascan-ai-redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
