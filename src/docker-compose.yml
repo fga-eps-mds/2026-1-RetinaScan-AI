@@ -12,6 +12,8 @@ services:
       - /app/.venv
     depends_on:
       - redis
+    env_file:
+      - .env
     restart: unless-stopped
 
   celery:
