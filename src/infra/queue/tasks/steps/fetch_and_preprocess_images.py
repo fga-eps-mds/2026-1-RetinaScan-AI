@@ -6,6 +6,7 @@ from infra.queue.celery_app import celery_app
 from infra.settings.settings import settings
 from infra.storage.minio import get_minio_client, download_object_bytes
 from domains.exams.preprocess_service import preprocess_retina_image
+from .on_task_failure import ErrorWebhookTask
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def _upload_png_bytes(client, object_name: str, data: bytes) -> None:
 
 @celery_app.task(
     bind=True,
+    base=ErrorWebhookTask,
     name="domains.exams.steps.fetch_and_preprocess_images",
     autoretry_for=(ConnectionError, TimeoutError),
     retry_backoff=True,

@@ -5,10 +5,12 @@ from infra.queue.celery_app import celery_app
 from infra.storage.minio import get_minio_client, download_object_bytes
 from domains.exams.models.retina_scan_model import get_retina_scan_model
 from infra.logger.logger import logger
+from .on_task_failure import ErrorWebhookTask
 
 
 @celery_app.task(
     bind=True,
+    base=ErrorWebhookTask,
     name="domains.exams.steps.run_inference",
     autoretry_for=(httpx.RequestError, TimeoutError, ConnectionError),
     retry_backoff=True,
