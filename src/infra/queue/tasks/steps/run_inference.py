@@ -1,10 +1,10 @@
 # infra/queue/tasks/steps/run_inference.py
 import httpx
-
-from infra.queue.celery_app import celery_app
-from infra.storage.minio import get_minio_client, download_object_bytes
 from domains.exams.models.retina_scan_model import get_retina_scan_model
 from infra.logger.logger import logger
+from infra.queue.celery_app import celery_app
+from infra.storage.minio import download_object_bytes, get_minio_client
+
 from .on_task_failure import ErrorWebhookTask
 
 
@@ -19,8 +19,8 @@ from .on_task_failure import ErrorWebhookTask
 )
 def run_inference(self, payload: dict) -> dict:
     exam_id = payload["exam_id"]
-    left_key = payload["artifacts"]["left_processed_key"]
-    right_key = payload["artifacts"]["right_processed_key"]
+    left_key = payload["left_image_key"]
+    right_key = payload["right_image_key"]
 
     logger.info(
         "Iniciando inferência | exam_id=%s | task_id=%s | left=%s | right=%s",
@@ -45,5 +45,7 @@ def run_inference(self, payload: dict) -> dict:
     }
     payload["meta"]["inference_done"] = True
 
-    logger.info("Inferência concluída | exam_id=%s | task_id=%s", exam_id, self.request.id)
+    logger.info(
+        "Inferência concluída | exam_id=%s | task_id=%s", exam_id, self.request.id
+    )
     return payload

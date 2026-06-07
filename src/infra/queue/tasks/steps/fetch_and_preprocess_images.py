@@ -1,23 +1,26 @@
 import logging
 from io import BytesIO
-from pathlib import PurePosixPath
 
+from domains.exams.preprocess_service import preprocess_retina_image
 from infra.queue.celery_app import celery_app
 from infra.settings.settings import settings
-from infra.storage.minio import get_minio_client, download_object_bytes
-from domains.exams.preprocess_service import preprocess_retina_image
+from infra.storage.minio import download_object_bytes, get_minio_client
+
 from .on_task_failure import ErrorWebhookTask
 
 logger = logging.getLogger(__name__)
 
+
 def _extract_filename_from_key(object_key: str) -> str:
     return object_key.split("/")[-1]
 
-def _build_processed_key(object_key: str) -> str:
-    path = PurePosixPath(object_key)
-    processed_dir = path.parent / "processed"
-    new_name = f"{path.stem}-processed.png"
-    return str(processed_dir / new_name)
+
+# def _build_processed_key(object_key: str) -> str:
+#     path = PurePosixPath(object_key)
+#     processed_dir = path.parent / "processed"
+#     new_name = f"{path.stem}-processed.png"
+#     return str(processed_dir / new_name)
+
 
 def _upload_png_bytes(client, object_name: str, data: bytes) -> None:
     client.put_object(
@@ -27,6 +30,7 @@ def _upload_png_bytes(client, object_name: str, data: bytes) -> None:
         length=len(data),
         content_type="image/png",
     )
+
 
 @celery_app.task(
     bind=True,
@@ -58,21 +62,31 @@ def fetch_and_preprocess_images(self, payload: dict) -> dict:
         filename=_extract_filename_from_key(right_key),
     )
 
-    left_processed_key = _build_processed_key(left_key)
-    right_processed_key = _build_processed_key(right_key)
+    new_left_key = (
+        left_key.rsplit(".", 1)[0] + ".png" if "." in left_key else left_key + ".png"
+    )
+    new_right_key = (
+        right_key.rsplit(".", 1)[0] + ".png" if "." in right_key else right_key + ".png"
+    )
 
-    _upload_png_bytes(minio_client, left_processed_key, left_processed_png)
-    _upload_png_bytes(minio_client, right_processed_key, right_processed_png)
+    _upload_png_bytes(minio_client, new_left_key, left_processed_png)
+    _upload_png_bytes(minio_client, new_right_key, right_processed_png)
 
-    payload["artifacts"]["left_processed_key"] = left_processed_key
-    payload["artifacts"]["right_processed_key"] = right_processed_key
+    if new_left_key != left_key:
+        minio_client.remove_object(settings.MINIO_BUCKET_EXAMS, left_key)
+    if new_right_key != right_key:
+        minio_client.remove_object(settings.MINIO_BUCKET_EXAMS, right_key)
+
+    payload["left_image_key"] = new_left_key
+    payload["right_image_key"] = new_right_key
+
     payload["meta"]["preprocessing_done"] = True
 
     logger.info(
         "Pré-processamento concluído | exam_id=%s | left=%s | right=%s",
         exam_id,
-        left_processed_key,
-        right_processed_key,
+        new_left_key,
+        new_right_key,
     )
 
     return payload
