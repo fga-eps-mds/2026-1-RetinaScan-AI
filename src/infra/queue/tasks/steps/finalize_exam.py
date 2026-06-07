@@ -1,9 +1,9 @@
 import mimetypes
-import httpx
 
+import httpx
+from infra.logger.logger import logger
 from infra.queue.celery_app import celery_app
 from infra.settings.settings import settings
-from infra.logger.logger import logger
 
 
 def _content_type(path: str) -> str:
@@ -28,27 +28,33 @@ def finalize_exam(self, payload: dict) -> dict:
         self.request.id,
     )
 
-    left_result = payload["result"]["left_eye"]
-    right_result = payload["result"]["right_eye"]
+    result_data = payload.get("result", {})
+    webhook_results = []
 
-    left_filename = payload["left_image_key"]
-    right_filename = payload["right_image_key"]
-
-    webhook_payload = {
-        "total_images": 2,
-        "exam_id": exam_id,
-        "results": [
+    if "left_eye" in result_data and payload.get("left_image_key"):
+        left_filename = payload["left_image_key"]
+        webhook_results.append(
             {
                 "filename": left_filename,
                 "content_type": _content_type(left_filename),
-                **left_result,
-            },
+                **result_data["left_eye"],
+            }
+        )
+
+    if "right_eye" in result_data and payload.get("right_image_key"):
+        right_filename = payload["right_image_key"]
+        webhook_results.append(
             {
                 "filename": right_filename,
                 "content_type": _content_type(right_filename),
-                **right_result,
-            },
-        ],
+                **result_data["right_eye"],
+            }
+        )
+
+    webhook_payload = {
+        "total_images": len(webhook_results),
+        "exam_id": exam_id,
+        "results": webhook_results,
     }
 
     try:

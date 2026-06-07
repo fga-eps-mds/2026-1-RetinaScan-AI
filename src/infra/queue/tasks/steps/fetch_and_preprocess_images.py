@@ -22,6 +22,33 @@ def _extract_filename_from_key(object_key: str) -> str:
 #     return str(processed_dir / new_name)
 
 
+def _process_side(minio_client, key: str | None) -> str | None:
+    """Função externa que processa um lado do exame, salva o png e deleta o jpg."""
+    if not key:
+        return None
+
+    # 1. Download do original
+    original_bytes = download_object_bytes(minio_client, key)
+
+    # 2. Pré-processamento
+    processed_png = preprocess_retina_image(
+        image_bytes=original_bytes,
+        filename=_extract_filename_from_key(key),
+    )
+
+    # 3. Define nova chave (.png) mantendo o ID original
+    new_key = key.rsplit(".", 1)[0] + ".png" if "." in key else key + ".png"
+
+    # 4. Upload da nova versão
+    _upload_png_bytes(minio_client, new_key, processed_png)
+
+    # 5. Deleta a original se o nome mudou (para garantir que só sobre o png)
+    if new_key != key:
+        minio_client.remove_object(settings.MINIO_BUCKET_EXAMS, key)
+
+    return new_key
+
+
 def _upload_png_bytes(client, object_name: str, data: bytes) -> None:
     client.put_object(
         bucket_name=settings.MINIO_BUCKET_EXAMS,
@@ -43,50 +70,20 @@ def _upload_png_bytes(client, object_name: str, data: bytes) -> None:
 )
 def fetch_and_preprocess_images(self, payload: dict) -> dict:
     exam_id = payload["exam_id"]
-    left_key = payload["left_image_key"]
-    right_key = payload["right_image_key"]
 
     logger.info("Iniciando fetch_and_preprocess_images | exam_id=%s", exam_id)
 
     minio_client = get_minio_client()
 
-    left_original_bytes = download_object_bytes(minio_client, left_key)
-    right_original_bytes = download_object_bytes(minio_client, right_key)
-
-    left_processed_png = preprocess_retina_image(
-        image_bytes=left_original_bytes,
-        filename=_extract_filename_from_key(left_key),
+    payload["left_image_key"] = _process_side(
+        minio_client, payload.get("left_image_key")
     )
-    right_processed_png = preprocess_retina_image(
-        image_bytes=right_original_bytes,
-        filename=_extract_filename_from_key(right_key),
+    payload["right_image_key"] = _process_side(
+        minio_client, payload.get("right_image_key")
     )
-
-    new_left_key = (
-        left_key.rsplit(".", 1)[0] + ".png" if "." in left_key else left_key + ".png"
-    )
-    new_right_key = (
-        right_key.rsplit(".", 1)[0] + ".png" if "." in right_key else right_key + ".png"
-    )
-
-    _upload_png_bytes(minio_client, new_left_key, left_processed_png)
-    _upload_png_bytes(minio_client, new_right_key, right_processed_png)
-
-    if new_left_key != left_key:
-        minio_client.remove_object(settings.MINIO_BUCKET_EXAMS, left_key)
-    if new_right_key != right_key:
-        minio_client.remove_object(settings.MINIO_BUCKET_EXAMS, right_key)
-
-    payload["left_image_key"] = new_left_key
-    payload["right_image_key"] = new_right_key
 
     payload["meta"]["preprocessing_done"] = True
 
-    logger.info(
-        "Pré-processamento concluído | exam_id=%s | left=%s | right=%s",
-        exam_id,
-        new_left_key,
-        new_right_key,
-    )
+    logger.info("Pré-processamento concluído | exam_id=%s", exam_id)
 
     return payload

@@ -19,8 +19,10 @@ from .on_task_failure import ErrorWebhookTask
 )
 def run_inference(self, payload: dict) -> dict:
     exam_id = payload["exam_id"]
-    left_key = payload["left_image_key"]
-    right_key = payload["right_image_key"]
+
+    # Usamos .get() para evitar erro caso a chave não exista (ex: exame de apenas um olho)
+    left_key = payload.get("left_image_key")
+    right_key = payload.get("right_image_key")
 
     logger.info(
         "Iniciando inferência | exam_id=%s | task_id=%s | left=%s | right=%s",
@@ -31,18 +33,18 @@ def run_inference(self, payload: dict) -> dict:
     )
 
     minio_client = get_minio_client()
-    left_bytes = download_object_bytes(minio_client, left_key)
-    right_bytes = download_object_bytes(minio_client, right_key)
-
     predictor = get_retina_scan_model()
+    results = {}
 
-    left_pred = predictor.predict_bytes(left_bytes)
-    right_pred = predictor.predict_bytes(right_bytes)
+    if left_key:
+        left_bytes = download_object_bytes(minio_client, left_key)
+        results["left_eye"] = predictor.predict_bytes(left_bytes)
 
-    payload["result"] = {
-        "left_eye": left_pred,
-        "right_eye": right_pred,
-    }
+    if right_key:
+        right_bytes = download_object_bytes(minio_client, right_key)
+        results["right_eye"] = predictor.predict_bytes(right_bytes)
+
+    payload["result"] = results
     payload["meta"]["inference_done"] = True
 
     logger.info(
