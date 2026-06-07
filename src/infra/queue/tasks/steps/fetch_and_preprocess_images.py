@@ -23,26 +23,21 @@ def _extract_filename_from_key(object_key: str) -> str:
 
 
 def _process_side(minio_client, key: str | None) -> str | None:
-    """Função externa que processa um lado do exame, salva o png e deleta o jpg."""
+    """Função que processa um lado do exame, salva o png e deleta o jpg."""
     if not key:
         return None
 
-    # 1. Download do original
     original_bytes = download_object_bytes(minio_client, key)
 
-    # 2. Pré-processamento
     processed_png = preprocess_retina_image(
         image_bytes=original_bytes,
         filename=_extract_filename_from_key(key),
     )
 
-    # 3. Define nova chave (.png) mantendo o ID original
     new_key = key.rsplit(".", 1)[0] + ".png" if "." in key else key + ".png"
 
-    # 4. Upload da nova versão
     _upload_png_bytes(minio_client, new_key, processed_png)
 
-    # 5. Deleta a original se o nome mudou (para garantir que só sobre o png)
     if new_key != key:
         minio_client.remove_object(settings.MINIO_BUCKET_EXAMS, key)
 
