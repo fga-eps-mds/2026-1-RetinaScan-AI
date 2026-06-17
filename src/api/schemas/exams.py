@@ -1,9 +1,13 @@
+from typing import Optional
+
 from pydantic import BaseModel
+
 
 class EnqueueExamRequest(BaseModel):
     exam_id: str
-    left_image_key: str
-    right_image_key: str
+    left_image_key: Optional[str] = None
+    right_image_key: Optional[str] = None
+
 
 class EnqueueExamResponse(BaseModel):
     message: str
