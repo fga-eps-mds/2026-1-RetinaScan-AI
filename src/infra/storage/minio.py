@@ -1,6 +1,8 @@
 from minio import Minio
 
 from infra.settings.settings import settings
+from infra.logger.logger import logger
+from io import BytesIO
 
 def get_minio_client() -> Minio:
     return Minio(
@@ -52,3 +54,36 @@ def download_object_bytes(
         if response is not None:
             response.close()
             response.release_conn()
+
+def upload_object_bytes(
+    client: Minio,
+    object_name: str,
+    data: bytes,
+    content_type: str = "application/octet-stream",
+) -> None:
+    try:
+        logger.info(
+            "Enviando objeto para o MinIO | bucket=%s | object=%s | bytes=%s",
+            settings.MINIO_BUCKET_EXAMS,
+            object_name,
+            len(data),
+        )
+
+        client.put_object(
+            bucket_name=settings.MINIO_BUCKET_EXAMS,
+            object_name=object_name,
+            data=BytesIO(data),
+            length=len(data),
+            content_type=content_type,
+        )
+
+        logger.info(
+            "Upload concluído | object=%s",
+            object_name,
+        )
+    except Exception:
+        logger.exception(
+            "Falha ao enviar objeto para o MinIO | object=%s",
+            object_name,
+        )
+        raise
